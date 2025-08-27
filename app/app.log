@@ -1,0 +1,12 @@
+2025-08-25 14:33:26,770 - WARNING - Static directory not found
+2025-08-25 14:33:26,815 - INFO - Starting server on 127.0.0.1:8000
+2025-08-25 14:33:26,845 - INFO - === APPLICATION STARTUP ===
+2025-08-25 14:33:28,581 - INFO - Starting model loading process...
+2025-08-25 14:33:28,581 - ERROR - Models directory 'app/models' does not exist
+2025-08-25 14:33:28,581 - ERROR - Startup failed: Models directory not found
+2025-08-25 14:33:41,683 - WARNING - Static directory not found
+2025-08-25 14:33:41,725 - INFO - Starting server on 127.0.0.1:8000
+2025-08-25 14:33:41,755 - INFO - === APPLICATION STARTUP ===
+2025-08-25 14:33:43,522 - INFO - Starting model loading process...
+2025-08-25 14:33:43,522 - ERROR - Models directory 'app/models' does not exist
+2025-08-25 14:33:43,523 - ERROR - Startup failed: Models directory not found

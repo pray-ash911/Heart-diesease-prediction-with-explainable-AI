@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Prediction with AI Explanations</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .form-group input, .form-group select {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result.danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .result h3 {
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #1565c0;
+        }
+
+        .info-box h4 {
+            margin-bottom: 10px;
+            color: #0d47a1;
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .explanations {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .explanation-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+        }
+
+        .explanation-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        .probability-display {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .probability-item {
+            text-align: center;
+        }
+
+        .probability-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .probability-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .no-disease {
+            color: #28a745;
+        }
+
+        .disease {
+            color: #dc3545;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .form-container {
+                padding: 20px;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>❤️ Heart Disease Prediction</h1>
+            <p>AI-powered prediction with LIME and SHAP explanations</p>
+        </div>
+
+        <div class="form-container">
+            <div class="info-box">
+                <h4>📋 Required Information:</h4>
+                <ul>
+                    <li><strong>Age:</strong> Patient's age in years</li>
+                    <li><strong>Sex:</strong> 1 = Male, 0 = Female</li>
+                    <li><strong>Chest Pain Type:</strong> 0 = Typical angina, 1 = Atypical angina, 2 = Non-anginal pain, 3 = Asymptomatic</li>
+                    <li><strong>Blood Pressure:</strong> Resting blood pressure in mm Hg</li>
+                    <li><strong>Cholesterol:</strong> Serum cholesterol in mg/dl</li>
+                    <li><strong>Blood Sugar:</strong> Fasting blood sugar > 120 mg/dl (1 = yes, 0 = no)</li>
+                    <li><strong>ECG Results:</strong> 0 = Normal, 1 = ST-T wave abnormality, 2 = Left ventricular hypertrophy</li>
+                    <li><strong>Max Heart Rate:</strong> Maximum heart rate achieved</li>
+                    <li><strong>Exercise Angina:</strong> Exercise induced angina (1 = yes, 0 = no)</li>
+                    <li><strong>ST Depression:</strong> ST depression induced by exercise</li>
+                    <li><strong>Slope:</strong> 0 = Upsloping, 1 = Flat, 2 = Downsloping</li>
+                    <li><strong>Vessels:</strong> Number of major vessels (0-3)</li>
+                    <li><strong>Thalassemia:</strong> 0 = Normal, 1 = Fixed defect, 2 = Reversable defect</li>
+                </ul>
+            </div>
+
+            <form id="predictionForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="age">Age (years)</label>
+                        <input type="number" id="age" name="age" required min="1" max="120">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sex">Sex</label>
+                        <select id="sex" name="sex" required>
+                            <option value="">Select gender</option>
+                            <option value="1">Male</option>
+                            <option value="0">Female</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cp">Chest Pain Type</label>
+                        <select id="cp" name="cp" required>
+                            <option value="">Select chest pain type</option>
+                            <option value="0">Typical angina</option>
+                            <option value="1">Atypical angina</option>
+                            <option value="2">Non-anginal pain</option>
+                            <option value="3">Asymptomatic</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trestbps">Resting Blood Pressure (mm Hg)</label>
+                        <input type="number" id="trestbps" name="trestbps" required min="90" max="200">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="chol">Serum Cholesterol (mg/dl)</label>
+                        <input type="number" id="chol" name="chol" required min="100" max="600">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fbs">Fasting Blood Sugar > 120 mg/dl</label>
+                        <select id="fbs" name="fbs" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="restecg">Resting ECG Results</label>
+                        <select id="restecg" name="restecg" required>
+                            <option value="">Select ECG result</option>
+                            <option value="0">Normal</option>
+                            <option value="1">ST-T wave abnormality</option>
+                            <option value="2">Left ventricular hypertrophy</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="thalach">Maximum Heart Rate Achieved</label>
+                        <input type="number" id="thalach" name="thalach" required min="60" max="202">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="exang">Exercise Induced Angina</label>
+                        <select id="exang" name="exang" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="oldpeak">ST Depression (mm)</label>
+                        <input type="number" id="oldpeak" name="oldpeak" required min="0" max="6.2" step="0.1">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="slope">Slope of Peak Exercise ST</label>
+                        <select id="slope" name="slope" required>
+                            <option value="">Select slope</option>
+                            <option value="0">Upsloping</option>
+                            <option value="1">Flat</option>
+                            <option value="2">Downsloping</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ca">Number of Major Vessels</label>
+                        <select id="ca" name="ca" required>
+                            <option value="">Select number</option>
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="thal">Thalassemia</label>
+                        <select id="thal" name="thal" required>
+                            <option value="">Select thalassemia type</option>
+                            <option value="0">Normal</option>
+                            <option value="1">Fixed defect</option>
+                            <option value="2">Reversable defect</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    🔍 Predict Heart Disease Risk with AI Explanations
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing patient data and generating explanations...</p>
+            </div>
+
+            <div class="result" id="result"></div>
+
+            <div class="explanations" id="explanations">
+                <div class="probability-display" id="probabilityDisplay"></div>
+
+                <div class="explanation-section">
+                    <h3>📊 LIME Explanation</h3>
+                    <p>Local Interpretable Model-agnostic Explanations show how each feature contributes to the prediction.</p>
+                    <div class="chart-container">
+                        <canvas id="limeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="explanation-section">
+                    <h3>🎯 SHAP Explanation</h3>
+                    <p>SHapley Additive exPlanations show the contribution of each feature to the model's output.</p>
+                    <div class="chart-container">
+                        <canvas id="shapChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let limeChart = null;
+        let shapChart = null;
+
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const explanations = document.getElementById('explanations');
+
+            // Show loading
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            explanations.style.display = 'none';
+
+            // Destroy existing charts
+            if (limeChart) {
+                limeChart.destroy();
+                limeChart = null;
+            }
+            if (shapChart) {
+                shapChart.destroy();
+                shapChart = null;
+            }
+
+            // Collect form data
+            const formData = new FormData(e.target);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = parseInt(value) || parseFloat(value) || value;
+            });
+
+            try {
+                // Make parallel requests to all endpoints
+                const [predictionResponse, limeResponse, shapResponse] = await Promise.all([
+                    fetch('/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    }),
+                    fetch('/explain/lime', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    }),
+                    fetch('/explain/shap', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    })
+                ]);
+
+                const prediction = await predictionResponse.json();
+                const limeData = await limeResponse.json();
+                const shapData = await shapResponse.json();
+
+                if (predictionResponse.ok && limeResponse.ok && shapResponse.ok) {
+                    // Display prediction result
+                    const resultClass = prediction.prediction === 1 ? 'danger' : 'success';
+                    const resultIcon = prediction.prediction === 1 ? '⚠️' : '✅';
+                    const resultTitle = prediction.prediction === 1 ? 'High Risk Detected' : 'Low Risk';
+
+                    result.innerHTML = `
+                        <h3>${resultIcon} ${resultTitle}</h3>
+                        <p><strong>${prediction.message}</strong></p>
+                        <p>Confidence: ${(prediction.confidence * 100).toFixed(1)}%</p>
+                    `;
+                    result.className = `result ${resultClass}`;
+                    result.style.display = 'block';
+
+                    // Display probability breakdown
+                    const probabilityDisplay = document.getElementById('probabilityDisplay');
+                    probabilityDisplay.innerHTML = `
+                        <div class="probability-item">
+                            <div class="probability-value no-disease">${(prediction.probabilities.no_disease * 100).toFixed(1)}%</div>
+                            <div class="probability-label">No Disease</div>
+                        </div>
+                        <div class="probability-item">
+                            <div class="probability-value disease">${(prediction.probabilities.disease * 100).toFixed(1)}%</div>
+                            <div class="probability-label">Disease</div>
+                        </div>
+                    `;
+
+                    // Create LIME chart
+                    createLIMEChart(limeData.feature_contributions);
+
+                    // Create SHAP chart
+                    createSHAPChart(shapData.shap_values, shapData.feature_names, shapData.base_value);
+
+                    explanations.style.display = 'block';
+                } else {
+                    const errorMessage = predictionResponse.ok ?
+                        (limeResponse.ok ? shapResponse.statusText : limeResponse.statusText) :
+                        predictionResponse.statusText;
+
+                    result.innerHTML = `
+                        <h3>❌ Error</h3>
+                        <p>${errorMessage || 'An error occurred during prediction'}</p>
+                    `;
+                    result.className = 'result danger';
+                    result.style.display = 'block';
+                }
+            } catch (error) {
+                result.innerHTML = `
+                    <h3>❌ Connection Error</h3>
+                    <p>Unable to connect to the prediction service. Please check if the server is running.</p>
+                `;
+                result.className = 'result danger';
+                result.style.display = 'block';
+            } finally {
+                // Hide loading
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+
+    function createLIMEChart(featureContributions) {
+        const ctx = document.getElementById('limeChart').getContext('2d');
+
+        // --- CORRECTED LINES HERE ---
+        const labels = featureContributions.map(item => item.feature); // Access 'feature' key
+        const values = featureContributions.map(item => item.weight);  // Access 'weight' key
+        // --- END CORRECTED LINES ---
+
+        const colors = values.map(value => value > 0 ? 'rgba(220, 53, 69, 0.8)' : 'rgba(40, 167, 69, 0.8)');
+
+        if (limeChart) { // Destroy previous chart instance if it exists
+            limeChart.destroy();
+        }
+
+        limeChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Feature Contribution',
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: colors.map(color => color.replace('0.8', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y', // Makes bars horizontal, often better for feature importance
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'LIME Feature Contributions'
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Contribution Score'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Features'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+
+
+
+        function createSHAPChart(shapValues, featureNames, baseValue) {
+            const ctx = document.getElementById('shapChart').getContext('2d');
+
+            // Create waterfall chart data
+            const data = [];
+            let currentValue = baseValue;
+
+            // Sort features by absolute SHAP value
+            const sortedData = featureNames.map((name, index) => ({
+                name: name,
+                value: shapValues[index]
+            })).sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+            sortedData.forEach(item => {
+                data.push({
+                    x: item.name,
+                    y: currentValue,
+                    width: Math.abs(item.value),
+                    color: item.value > 0 ? 'rgba(220, 53, 69, 0.8)' : 'rgba(40, 167, 69, 0.8)'
+                });
+                currentValue += item.value;
+            });
+
+            // Add final prediction point
+            data.push({
+                x: 'Prediction',
+                y: currentValue,
+                width: 0,
+                color: 'rgba(0, 123, 255, 1)'
+            });
+
+            shapChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.x),
+                    datasets: [{
+                        label: 'SHAP Values',
+                        data: data.map(d => d.y),
+                        backgroundColor: data.map(d => d.color),
+                        borderColor: data.map(d => d.color.replace('0.8', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'SHAP Waterfall Chart'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'SHAP Value'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Features'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
